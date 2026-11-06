@@ -1,0 +1,256 @@
+/*********
+* Sprites.jack - Figuras de 16 x 16 pixeles para Grafico.dibujarCelda.
+* Cada sprite es un Array de 16 palabras: la linea k esta en sprite[k], y el
+* bit 0 es el pixel de la izquierda. Los ids son los codigos de Carrera
+* (0 cono, 1 camion, 2 moto, 3 moneda) mas 4 carro, 5 borde, 6 divisor,
+* 7 barra y 8 vacio.
+* Autor 1:
+* Autor 2:
+* Autor 3:
+*********/
+class Sprites {
+    field Array lista;
+
+    /** Crea los nueve sprites una sola vez; el juego los reutiliza todos. */
+    constructor Sprites new() {
+        let lista = Array.new(9);
+
+        let lista[0] = Sprites.cono();
+        let lista[1] = Sprites.camion();
+        let lista[2] = Sprites.moto();
+        let lista[3] = Sprites.moneda();
+        let lista[4] = Sprites.carro();
+        let lista[5] = Sprites.borde();
+        let lista[6] = Sprites.divisor();
+        let lista[7] = Sprites.barra();
+        let lista[8] = Sprites.vacio();
+        return this;
+    }
+
+    /** Libera los sprites y el arreglo que los contiene. */
+    method void dispose() {
+        var int i;
+        var Array s;
+        let i = 0;
+        while (i < 9) {
+            let s = lista[i];
+            do s.dispose();
+            let i = i + 1;
+        }
+        do lista.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Sprite con el identificador id (0 a 8). */
+    method Array obtener(int id) {
+        return lista[id];
+    }
+
+    /** Cono: triangulo que se acerca al carro. */
+    function Array cono() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 384;
+        let s[3] = 384;
+        let s[4] = 960;
+        let s[5] = 960;
+        let s[6] = 2016;
+        let s[7] = 2016;
+        let s[8] = 4080;
+        let s[9] = 4080;
+        let s[10] = 8184;
+        let s[11] = 8184;
+        let s[12] = 16380;
+        let s[13] = 16380;
+        let s[14] = 32766;
+        let s[15] = 0;
+        return s;
+    }
+
+    /** Parte de camion: caja con contorno. */
+    function Array camion() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 32767;
+        let s[3] = 16385;
+        let s[4] = 16385;
+        let s[5] = 16385;
+        let s[6] = 16385;
+        let s[7] = 16385;
+        let s[8] = 16385;
+        let s[9] = 16385;
+        let s[10] = 16385;
+        let s[11] = 16385;
+        let s[12] = 16385;
+        let s[13] = 32767;
+        let s[14] = 0;
+        let s[15] = 0;
+        return s;
+    }
+
+    /** Moto: rombo relleno. */
+    function Array moto() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 384;
+        let s[3] = 960;
+        let s[4] = 2016;
+        let s[5] = 4080;
+        let s[6] = 8184;
+        let s[7] = 16380;
+        let s[8] = 16380;
+        let s[9] = 8184;
+        let s[10] = 4080;
+        let s[11] = 2016;
+        let s[12] = 960;
+        let s[13] = 384;
+        let s[14] = 0;
+        let s[15] = 0;
+        return s;
+    }
+
+    /** Moneda: anillo. */
+    function Array moneda() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 2016;
+        let s[3] = 8184;
+        let s[4] = 8184;
+        let s[5] = 15420;
+        let s[6] = 14364;
+        let s[7] = 14364;
+        let s[8] = 14364;
+        let s[9] = 14364;
+        let s[10] = 15420;
+        let s[11] = 8184;
+        let s[12] = 8184;
+        let s[13] = 2016;
+        let s[14] = 0;
+        let s[15] = 0;
+        return s;
+    }
+
+    /** Carro del jugador: carroceria con ventana y ruedas. */
+    function Array carro() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 7196;
+        let s[3] = 16382;
+        let s[4] = 16382;
+        let s[5] = 14350;
+        let s[6] = 14350;
+        let s[7] = 14350;
+        let s[8] = 16382;
+        let s[9] = 16382;
+        let s[10] = 16382;
+        let s[11] = 16382;
+        let s[12] = 16382;
+        let s[13] = 7196;
+        let s[14] = 0;
+        let s[15] = 0;
+        return s;
+    }
+
+    /** Borde de la via. */
+    function Array borde() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 32767;
+        let s[1] = 32767;
+        let s[2] = 0;
+        let s[3] = 0;
+        let s[4] = 0;
+        let s[5] = 0;
+        let s[6] = 0;
+        let s[7] = 0;
+        let s[8] = 0;
+        let s[9] = 0;
+        let s[10] = 0;
+        let s[11] = 0;
+        let s[12] = 0;
+        let s[13] = 0;
+        let s[14] = 32767;
+        let s[15] = 32767;
+        return s;
+    }
+
+    /** Linea divisoria discontinua. */
+    function Array divisor() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 0;
+        let s[3] = 0;
+        let s[4] = 0;
+        let s[5] = 0;
+        let s[6] = 0;
+        let s[7] = 3855;
+        let s[8] = 3855;
+        let s[9] = 0;
+        let s[10] = 0;
+        let s[11] = 0;
+        let s[12] = 0;
+        let s[13] = 0;
+        let s[14] = 0;
+        let s[15] = 0;
+        return s;
+    }
+
+    /** Bloque de la barra de progreso. */
+    function Array barra() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 0;
+        let s[3] = 32767;
+        let s[4] = 32767;
+        let s[5] = 32767;
+        let s[6] = 32767;
+        let s[7] = 32767;
+        let s[8] = 32767;
+        let s[9] = 32767;
+        let s[10] = 32767;
+        let s[11] = 32767;
+        let s[12] = 32767;
+        let s[13] = 0;
+        let s[14] = 0;
+        let s[15] = 0;
+        return s;
+    }
+
+    /** Celda vacia. */
+    function Array vacio() {
+        var Array s;
+        let s = Array.new(16);
+        let s[0] = 0;
+        let s[1] = 0;
+        let s[2] = 0;
+        let s[3] = 0;
+        let s[4] = 0;
+        let s[5] = 0;
+        let s[6] = 0;
+        let s[7] = 0;
+        let s[8] = 0;
+        let s[9] = 0;
+        let s[10] = 0;
+        let s[11] = 0;
+        let s[12] = 0;
+        let s[13] = 0;
+        let s[14] = 0;
+        let s[15] = 0;
+        return s;
+    }
+}

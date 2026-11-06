@@ -1,0 +1,74 @@
+// Grafico.vm - Rutinas graficas escritas a mano en lenguaje VM (seccion 9).
+// Autor 1:
+// Autor 2:
+// Autor 3:
+// No debe existir Grafico.jack. No se permite llamar a Memory.poke,
+// Memory.peek ni Math.multiply: la memoria se accede con pointer/that.
+
+// dibujarCelda(fila, col, sprite)
+//   argument 0 = fila (0..15), argument 1 = col (0..31),
+//   argument 2 = direccion del Array de 16 palabras del sprite.
+//   Linea k de la celda: RAM[16384 + fila*512 + k*32 + col] = sprite[k].
+//
+// local 0 = filas recorridas (sumar 512 por cada fila)
+// local 1 = direccion destino de la linea actual (sumar 32 por linea)
+// local 2 = k, numero de linea (0..15)
+function Grafico.dibujarCelda 3
+// local 1 = 16384 + col: primera palabra de la fila de celdas 0
+push constant 16384
+push argument 1
+add
+pop local 1
+
+// local 1 += 512 * fila, hecho con sumas en lugar de Math.multiply
+push constant 0
+pop local 0
+label Grafico.filas
+push local 0
+push argument 0
+lt
+not
+if-goto Grafico.filasFin
+push local 1
+push constant 512
+add
+pop local 1
+push local 0
+push constant 1
+add
+pop local 0
+goto Grafico.filas
+label Grafico.filasFin
+
+// copia las 16 lineas: sprite[k] -> RAM[destino]
+push constant 0
+pop local 2
+label Grafico.lineas
+push local 2
+push constant 16
+lt
+not
+if-goto Grafico.fin
+// valor = sprite[k]: THIS apunta a la palabra k del sprite
+push argument 2
+push local 2
+add
+pop pointer 0
+push this 0
+// destino = THAT apunta a la linea k de la celda
+push local 1
+pop pointer 1
+pop that 0
+// siguiente linea: destino += 32 (una fila de la pantalla) y k += 1
+push local 1
+push constant 32
+add
+pop local 1
+push local 2
+push constant 1
+add
+pop local 2
+goto Grafico.lineas
+label Grafico.fin
+push constant 0
+return
