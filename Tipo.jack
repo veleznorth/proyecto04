@@ -1,0 +1,84 @@
+/*********
+* Tipo.jack - Datos de un tipo de obstaculo (tabla 7.3 del enunciado).
+* Los cuatro tipos se crean una vez en Tipo.catalogo() y los comparten todos
+* los obstaculos del mismo tipo. Agregar un tipo nuevo es agregar una linea.
+* Autor 1:
+* Autor 2:
+* Autor 3:
+*********/
+class Tipo {
+    field int cod;      // 0 cono, 1 camion, 2 moto, 3 moneda
+    field int lon;      // largo en celdas
+    field int pas;      // celdas que avanza por paso
+    field int pre;      // puntos que suma al tocarlo
+
+    /** Tipo con su codigo, largo, velocidad y premio. */
+    constructor Tipo new(int codigo, int largo, int paso, int premio) {
+        let cod = codigo;
+        let lon = largo;
+        let pas = paso;
+        let pre = premio;
+        return this;
+    }
+
+    /** Libera el tipo. */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Codigo del tipo. */
+    method int codigo() {
+        return cod;
+    }
+
+    /** Largo en celdas. */
+    method int longitud() {
+        return lon;
+    }
+
+    /** Celdas que avanza por paso. */
+    method int paso() {
+        return pas;
+    }
+
+    /** Puntos al tocarlo. */
+    method int premio() {
+        return pre;
+    }
+
+    /** true si el tipo quita una vida (codigos 0 a 2). */
+    method boolean letal() {
+        return cod < 3;
+    }
+
+    /** true si el codigo t corresponde a un obstaculo letal. */
+    function boolean esLetal(int t) {
+        return (t > -1) & (t < 3);
+    }
+
+    /** Crea el catalogo con los cuatro tipos de la tabla 7.3. */
+    function Array catalogo() {
+        var Array t;
+        let t = Array.new(4);
+        let t[0] = Tipo.new(0, 1, 1, 0);
+        let t[1] = Tipo.new(1, 3, 1, 0);
+        let t[2] = Tipo.new(2, 1, 2, 0);
+        let t[3] = Tipo.new(3, 1, 1, 10);
+        return t;
+    }
+
+    /** Libera el catalogo y sus cuatro tipos. */
+    function void liberar(Array t) {
+        var int i;
+        var Tipo o;
+        let i = 0;
+        while (i < 4) {
+            let o = t[i];
+            do o.dispose();
+            let i = i + 1;
+        }
+        do t.dispose();
+        return;
+    }
+}
