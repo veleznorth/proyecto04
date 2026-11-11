@@ -1,0 +1,207 @@
+/*********
+* Pantalla.jack - Presentacion del juego: dibuja la via, los carriles, el
+* marcador y los mensajes. Lee el estado de Carrera, pero no lo cambia.
+* Solo redibuja las celdas que cambiaron desde el cuadro anterior.
+* Autor 1:
+* Autor 2:
+* Autor 3:
+*********/
+class Pantalla {
+    field Sprites sprites;   // sprites compartidos (los libera Juego)
+    field Array previo;      // sprite dibujado en cada celda de carril (3 x 32)
+    field int ultVidas;      // ultimo marcador dibujado
+    field int ultPuntaje;
+    field int ultProgreso;
+
+    /** Pantalla que usa los sprites s. */
+    constructor Pantalla new(Sprites s) {
+        let sprites = s;
+        let previo = Array.new(96);
+        let ultVidas = -1;
+        let ultPuntaje = -1;
+        let ultProgreso = -1;
+        do reiniciarPrevio();
+        return this;
+    }
+
+    /** Libera la pantalla. */
+    method void dispose() {
+        do previo.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Marca todas las celdas de los carriles como no dibujadas. */
+    method void reiniciarPrevio() {
+        var int k;
+        let k = 0;
+        while (k < 96) {
+            let previo[k] = -2;
+            let k = k + 1;
+        }
+        return;
+    }
+
+    /** Borra la pantalla y olvida lo dibujado antes. */
+    method void limpiar() {
+        do Screen.clearScreen();
+        do reiniciarPrevio();
+        let ultVidas = -1;
+        let ultPuntaje = -1;
+        let ultProgreso = -1;
+        return;
+    }
+
+    /** Borra la franja inferior (filas de celdas 11 a 15) donde van los mensajes. */
+    method void borrarFranja() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(0, 176, 511, 255);
+        do Screen.setColor(true);
+        return;
+    }
+
+    /** Pantalla inicial con instrucciones y la eleccion de distancia. */
+    method void menu() {
+        do limpiar();
+        do Output.moveCursor(4, 18);
+        do Output.printString("CARRERAS DE TRES CARRILES");
+        do Output.moveCursor(7, 4);
+        do Output.printString("Flecha arriba / abajo: cambiar de carril");
+        do Output.moveCursor(8, 4);
+        do Output.printString("P: pausa y continuar    R: reiniciar    ESC: salir");
+        do Output.moveCursor(11, 4);
+        do Output.printString("Elija la distancia a la meta:");
+        do Output.moveCursor(13, 8);
+        do Output.printString("1 = corta  (40 pasos)");
+        do Output.moveCursor(14, 8);
+        do Output.printString("2 = media  (80 pasos)");
+        do Output.moveCursor(15, 8);
+        do Output.printString("3 = larga (150 pasos)");
+        return;
+    }
+
+    /** Pantalla completa de una partida nueva: fondo, controles y estado actual. */
+    method void partida(Carrera c, int meta) {
+        do limpiar();
+        do fondo();
+        do Output.moveCursor(17, 0);
+        do Output.printString("Flechas: cambiar carril   P: pausa   R: menu   ESC: salir");
+        do actualizar(c, meta);
+        return;
+    }
+
+    /** Actualiza marcador, barra de progreso y carriles. */
+    method void actualizar(Carrera c, int meta) {
+        do marcador(c, meta);
+        do dibujarCarriles(c);
+        return;
+    }
+
+    /** Mensaje de pausa. */
+    method void pausa() {
+        do borrarFranja();
+        do Output.moveCursor(18, 0);
+        do Output.printString("PAUSA.  P: continuar    R: volver al menu");
+        return;
+    }
+
+    /** Mensaje final de victoria o derrota, con el puntaje. */
+    method void fin(Carrera c) {
+        do borrarFranja();
+        do Output.moveCursor(18, 0);
+        if (c.estado() = 2) {
+            do Output.printString("LLEGASTE A LA META: VICTORIA");
+        }
+        if (c.estado() = 1) {
+            do Output.printString("TE QUEDASTE SIN VIDAS: DERROTA");
+        }
+        do Output.moveCursor(19, 0);
+        do Output.printString("Puntaje final: ");
+        do Output.printInt(c.puntaje());
+        do Output.moveCursor(21, 0);
+        do Output.printString("R: volver al menu    ESC: salir");
+        return;
+    }
+
+    /** Dibuja los bordes y las lineas divisorias de la via. */
+    method void fondo() {
+        var int x;
+        let x = 0;
+        while (x < 32) {
+            do Grafico.dibujarCelda(4, x, sprites.obtener(5));
+            do Grafico.dibujarCelda(10, x, sprites.obtener(5));
+            do Grafico.dibujarCelda(6, x, sprites.obtener(6));
+            do Grafico.dibujarCelda(8, x, sprites.obtener(6));
+            let x = x + 1;
+        }
+        return;
+    }
+
+    /** Marcador en las filas 0 y 1 y barra de progreso en la fila 2; solo si algo cambio. */
+    method void marcador(Carrera c, int meta) {
+        var int prog;
+        let prog = c.progreso();
+        if ((c.vidas() = ultVidas) & (c.puntaje() = ultPuntaje) & (prog = ultProgreso)) {
+            return;
+        }
+        let ultVidas = c.vidas();
+        let ultPuntaje = c.puntaje();
+        let ultProgreso = prog;
+        do Screen.setColor(false);
+        do Screen.drawRectangle(0, 0, 511, 31);
+        do Screen.setColor(true);
+        do Output.moveCursor(0, 0);
+        do Output.printString("Vidas: ");
+        do Output.printInt(c.vidas());
+        do Output.printString("    Puntaje: ");
+        do Output.printInt(c.puntaje());
+        do Output.printString("    Faltan: ");
+        do Output.printInt(meta - prog);
+        do barra(prog, meta);
+        return;
+    }
+
+    /** Dibuja la fila 2 de celdas: parte llena segun el progreso hacia la meta. */
+    method void barra(int prog, int meta) {
+        var int x, lleno;
+        let lleno = (prog * 32) / meta;
+        let x = 0;
+        while (x < 32) {
+            if (x < lleno) {
+                do Grafico.dibujarCelda(2, x, sprites.obtener(7));
+            } else {
+                do Grafico.dibujarCelda(2, x, sprites.obtener(8));
+            }
+            let x = x + 1;
+        }
+        return;
+    }
+
+    /** Redibuja solo las celdas de los carriles que cambiaron desde el cuadro anterior. */
+    method void dibujarCarriles(Carrera c) {
+        var int carril, x, id, k, car;
+        let car = c.carrilCarro();
+        let carril = 0;
+        while (carril < 3) {
+            let x = 0;
+            while (x < 32) {
+                if ((carril = car) & (x = 2)) {
+                    let id = 4;
+                } else {
+                    let id = c.ocupada(carril, x);
+                    if (id < 0) {
+                        let id = 8;
+                    }
+                }
+                let k = (carril * 32) + x;
+                if (~(previo[k] = id)) {
+                    do Grafico.dibujarCelda(5 + (2 * carril), x, sprites.obtener(id));
+                    let previo[k] = id;
+                }
+                let x = x + 1;
+            }
+            let carril = carril + 1;
+        }
+        return;
+    }
+}
