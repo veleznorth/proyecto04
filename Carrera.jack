@@ -1,0 +1,288 @@
+/*********
+* Carrera.jack - Logica del juego de carriles (seccion 8 del enunciado).
+* No usa Screen, Output, Keyboard, Grafico ni Sys.wait, ni directamente ni
+* a traves de las clases que usa. Solo cambia su estado y responde consultas.
+* Autor 1:
+* Autor 2:
+* Autor 3:
+*********/
+class Carrera {
+    field int pista;       // carril del carro: 0, 1 o 2
+    field int pedido;      // cambio de carril solicitado: -1, 0 o 1
+    field int vid;         // vidas restantes
+    field int punt;        // puntaje
+    field int prog;        // pasos completados
+    field int pasos;       // distancia a la meta
+    field int est;         // 0 jugando, 1 derrota, 2 victoria
+    field int nObs;        // obstaculos activos
+    field Array obs;       // obstaculos activos (hasta 20)
+    field Array tipos;     // catalogo de los 4 tipos de obstaculo
+    field Azar azar;       // generador pseudoaleatorio
+
+    /** Carrera nueva: carro en el carril 1, 3 vidas, puntaje 0 y sin obstaculos. */
+    constructor Carrera new(int pasosMeta, int semilla) {
+        let pista = 1;
+        let pedido = 0;
+        let vid = 3;
+        let punt = 0;
+        let prog = 0;
+        let pasos = pasosMeta;
+        let est = 0;
+        let nObs = 0;
+        let obs = Array.new(20);
+        let tipos = Tipo.catalogo();
+        let azar = Azar.new(semilla);
+        return this;
+    }
+
+    /** Libera los obstaculos, el catalogo, el generador y la carrera. */
+    method void dispose() {
+        var int i;
+        var Obstaculo o;
+        let i = 0;
+        while (i < nObs) {
+            let o = obs[i];
+            do o.dispose();
+            let i = i + 1;
+        }
+        do obs.dispose();
+        do Tipo.liberar(tipos);
+        do azar.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Solicita un cambio de carril: -1 sube, 1 baja. Se aplica en avanzar. */
+    method void moverCarro(int dir) {
+        if (~(est = 0)) {
+            return;
+        }
+        if (dir = -1) {
+            let pedido = -1;
+        }
+        if (dir = 1) {
+            let pedido = 1;
+        }
+        return;
+    }
+
+    /** Agrega un obstaculo de tipo t, carril c y celda izquierda x, si hay lugar. */
+    method void agregarObstaculo(int t, int c, int x) {
+        var Obstaculo o;
+        if (nObs > 19) {
+            return;
+        }
+        if ((t < 0) | (t > 3)) {
+            return;
+        }
+        if ((c < 0) | (c > 2)) {
+            return;
+        }
+        if ((x < 0) | (x > 31)) {
+            return;
+        }
+        let o = Obstaculo.new(tipos[t], c, x);
+        let obs[nObs] = o;
+        let nObs = nObs + 1;
+        return;
+    }
+
+    /** Un paso del juego, en el orden de la seccion 8.3. */
+    method void avanzar() {
+        if (~(est = 0)) {
+            return;
+        }
+        do cambiarCarril();
+        do mover();
+        do chocar();
+        if (est = 1) {
+            return;
+        }
+        do salida();
+        let prog = prog + 1;
+        let punt = punt + 1;
+        if (prog = pasos) {
+            let est = 2;
+        }
+        return;
+    }
+
+    /** Agrega a lo sumo un obstaculo en la columna 31 (seccion 8.4). */
+    method void generar() {
+        var int tipo, c;
+        if (~(est = 0)) {
+            return;
+        }
+        if (nObs > 19) {
+            return;
+        }
+        // Una de cada tres llamadas genera un obstaculo.
+        if (~(azar.entero(3) = 0)) {
+            return;
+        }
+        let tipo = azar.entero(4);
+        let c = azar.entero(3);
+        if (~(ocupada(c, 31) = -1)) {
+            return;
+        }
+        if (Tipo.esLetal(tipo)) {
+            if (violaPasoLibre(c)) {
+                return;
+            }
+        }
+        do agregarObstaculo(tipo, c, 31);
+        return;
+    }
+
+    /** Carril actual del carro. */
+    method int carrilCarro() {
+        return pista;
+    }
+
+    /** Tipo del obstaculo que ocupa (c, x), o -1 si la celda esta libre o x esta fuera de 0 a 31. */
+    method int ocupada(int c, int x) {
+        var int i;
+        var Obstaculo o;
+        if ((x < 0) | (x > 31)) {
+            return -1;
+        }
+        let i = 0;
+        while (i < nObs) {
+            let o = obs[i];
+            if (o.cubre(c, x)) {
+                return o.codigo();
+            }
+            let i = i + 1;
+        }
+        return -1;
+    }
+
+    /** Vidas restantes. */
+    method int vidas() {
+        return vid;
+    }
+
+    /** Puntaje acumulado. */
+    method int puntaje() {
+        return punt;
+    }
+
+    /** Pasos completados. */
+    method int progreso() {
+        return prog;
+    }
+
+    /** 0 jugando, 1 derrota, 2 victoria. */
+    method int estado() {
+        return est;
+    }
+
+    /** Cantidad de obstaculos activos. */
+    method int cantidad() {
+        return nObs;
+    }
+
+    /** Paso 1: aplica el cambio de carril pedido si el resultado esta entre 0 y 2. */
+    method void cambiarCarril() {
+        var int nueva;
+        if (~(pedido = 0)) {
+            let nueva = pista + pedido;
+            if ((nueva > -1) & (nueva < 3)) {
+                let pista = nueva;
+            }
+        }
+        let pedido = 0;
+        return;
+    }
+
+    /** Paso 2: cada obstaculo avanza segun su velocidad. */
+    method void mover() {
+        var int i;
+        var Obstaculo o;
+        let i = 0;
+        while (i < nObs) {
+            let o = obs[i];
+            do o.mover();
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /** Paso 3: los obstaculos que tocan el carro lo quitan o lo premian; si no quedan vidas, termina. */
+    method void chocar() {
+        var int i;
+        var Obstaculo o;
+        let i = 0;
+        while ((i < nObs) & (vid > 0)) {
+            let o = obs[i];
+            if (o.golpea(pista)) {
+                if (o.letal()) {
+                    let vid = vid - 1;
+                } else {
+                    let punt = punt + o.premio();
+                }
+                do quitar(i);
+            } else {
+                let i = i + 1;
+            }
+        }
+        if (vid = 0) {
+            let est = 1;
+        }
+        return;
+    }
+
+    /** Paso 4: se eliminan los obstaculos que salieron por la izquierda. */
+    method void salida() {
+        var int i;
+        var Obstaculo o;
+        let i = 0;
+        while (i < nObs) {
+            let o = obs[i];
+            if (o.salio()) {
+                do quitar(i);
+            } else {
+                let i = i + 1;
+            }
+        }
+        return;
+    }
+
+    /** Elimina el obstaculo i, libera su memoria y compacta el arreglo. */
+    method void quitar(int i) {
+        var Obstaculo o;
+        let o = obs[i];
+        do o.dispose();
+        let nObs = nObs - 1;
+        let obs[i] = obs[nObs];
+        let obs[nObs] = null;
+        return;
+    }
+
+    /** Regla de paso libre: true si los otros dos carriles tienen letales en las columnas 26 a 31. */
+    method boolean violaPasoLibre(int c) {
+        var int a, b;
+        let a = c + 1;
+        if (a > 2) {
+            let a = a - 3;
+        }
+        let b = c + 2;
+        if (b > 2) {
+            let b = b - 3;
+        }
+        return zonaLetal(a) & zonaLetal(b);
+    }
+
+    /** true si el carril c tiene un obstaculo letal en alguna columna de 26 a 31. */
+    method boolean zonaLetal(int c) {
+        var int x;
+        let x = 26;
+        while (x < 32) {
+            if (Tipo.esLetal(ocupada(c, x))) {
+                return true;
+            }
+            let x = x + 1;
+        }
+        return false;
+    }
+}

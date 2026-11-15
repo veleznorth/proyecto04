@@ -1,0 +1,85 @@
+/*********
+* Obstaculo.jack - Un obstaculo en la via. Una sola clase para los cuatro
+* tipos: el comportamiento viene del objeto Tipo que la clase contiene
+* (composicion y parametrizacion por datos; Jack no tiene herencia).
+* Autor 1:
+* Autor 2:
+* Autor 3:
+*********/
+class Obstaculo {
+    field Tipo tipo;      // datos del tipo (largo, velocidad, letal, premio)
+    field int pista;      // carril
+    field int x;          // columna de la celda izquierda
+    field int xAnt;       // columna antes del ultimo movimiento
+
+    /** Obstaculo de tipo t en el carril c, con su celda izquierda en la columna col. */
+    constructor Obstaculo new(Tipo t, int c, int col) {
+        let tipo = t;
+        let pista = c;
+        let x = col;
+        let xAnt = col;
+        return this;
+    }
+
+    /** Libera el obstaculo. El objeto Tipo lo libera Carrera. */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Guarda la columna anterior y avanza segun la velocidad del tipo. */
+    method void mover() {
+        let xAnt = x;
+        let x = x - tipo.paso();
+        return;
+    }
+
+    /** true si, en su ultimo movimiento, el obstaculo paso por la columna 2 en el carril c. */
+    method boolean golpea(int c) {
+        var int fin;
+        if (~(c = pista)) {
+            return false;
+        }
+        if (x > 2) {
+            return false;
+        }
+        let fin = xAnt + tipo.longitud() - 1;
+        return ~(fin < 2);
+    }
+
+    /** true si el obstaculo ocupa la celda (c, cx). */
+    method boolean cubre(int c, int cx) {
+        var int fin;
+        if (~(c = pista)) {
+            return false;
+        }
+        let fin = x + tipo.longitud() - 1;
+        if (cx < x) {
+            return false;
+        }
+        if (cx > fin) {
+            return false;
+        }
+        return true;
+    }
+
+    /** true si salio completo por la izquierda. */
+    method boolean salio() {
+        return (x + tipo.longitud() - 1) < 0;
+    }
+
+    /** Codigo del tipo (0 cono, 1 camion, 2 moto, 3 moneda). */
+    method int codigo() {
+        return tipo.codigo();
+    }
+
+    /** true si el tipo es letal. */
+    method boolean letal() {
+        return tipo.letal();
+    }
+
+    /** Puntos que suma al tocarlo (solo monedas). */
+    method int premio() {
+        return tipo.premio();
+    }
+}
