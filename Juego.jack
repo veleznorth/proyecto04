@@ -1,0 +1,188 @@
+/*********
+* Juego.jack - Controlador del juego: lee el teclado sin esperar, maneja los
+* modos (menu, jugando, pausa, fin), avanza Carrera a su ritmo y pide a
+* Pantalla que dibuje. No contiene reglas del juego: esas estan en Carrera.
+* Autor 1:
+* Autor 2:
+* Autor 3:
+*********/
+class Juego {
+    field Sprites sprites;
+    field Pantalla pantalla;
+    field Carrera carrera;      // partida actual, o null en el menu
+    field int modo;             // 0 menu, 1 jugando, 2 pausa, 3 fin
+    field int meta;             // distancia elegida en el menu
+    field int tecla;            // tecla pulsada en este cuadro (0 si ninguna)
+    field int teclaAnt;         // tecla del cuadro anterior
+    field boolean nueva;        // la tecla acaba de pulsarse
+    field boolean salir;        // ESC: terminar el programa
+    field int cuadros;          // cuadros transcurridos (semilla de cada partida)
+    field int cuadrosPaso;      // cuadros desde el ultimo paso del juego
+
+    /** Crea los sprites, la pantalla y el estado inicial del menu. */
+    constructor Juego new() {
+        let sprites = Sprites.new();
+        let pantalla = Pantalla.new(sprites);
+        let carrera = null;
+        let modo = 0;
+        let meta = 0;
+        let tecla = 0;
+        let teclaAnt = 0;
+        let nueva = false;
+        let salir = false;
+        let cuadros = 0;
+        let cuadrosPaso = 0;
+        return this;
+    }
+
+    /** Libera todo lo que el juego creo. */
+    method void dispose() {
+        if (~(carrera = null)) {
+            do carrera.dispose();
+        }
+        do pantalla.dispose();
+        do sprites.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Bucle principal: lee el teclado, procesa la tecla y espera un cuadro. */
+    method void correr() {
+        do pantalla.menu();
+        while (~salir) {
+            do Sys.wait(30);
+            let cuadros = cuadros + 1;
+            let tecla = Keyboard.keyPressed();
+            let nueva = ~(tecla = teclaAnt);
+            if (tecla = 140) {
+                let salir = true;
+            } else {
+                do procesar();
+            }
+            let teclaAnt = tecla;
+        }
+        return;
+    }
+
+    /** Envia la tecla al procesador del modo actual. */
+    method void procesar() {
+        if (modo = 0) {
+            do procesarMenu();
+        }
+        if (modo = 1) {
+            do procesarJuego();
+        }
+        if (modo = 2) {
+            do procesarPausa();
+        }
+        if (modo = 3) {
+            do procesarFin();
+        }
+        return;
+    }
+
+    /** Menu: 1, 2 o 3 eligen la distancia y empiezan la partida. */
+    method void procesarMenu() {
+        if (~nueva) {
+            return;
+        }
+        if (tecla = 49) {
+            do iniciar(40);
+        }
+        if (tecla = 50) {
+            do iniciar(80);
+        }
+        if (tecla = 51) {
+            do iniciar(150);
+        }
+        return;
+    }
+
+    /** Partida: cambios de carril, pausa, reinicio y avance del juego cada cinco cuadros. */
+    method void procesarJuego() {
+        if (nueva) {
+            if (tecla = 131) {
+                do carrera.moverCarro(-1);
+            }
+            if (tecla = 133) {
+                do carrera.moverCarro(1);
+            }
+            if (tecla = 80) {
+                do pausar();
+                return;
+            }
+            if (tecla = 82) {
+                do menu();
+                return;
+            }
+        }
+        let cuadrosPaso = cuadrosPaso + 1;
+        if (cuadrosPaso > 4) {
+            let cuadrosPaso = 0;
+            do carrera.avanzar();
+            do carrera.generar();
+            do pantalla.actualizar(carrera, meta);
+            if (~(carrera.estado() = 0)) {
+                let modo = 3;
+                do pantalla.fin(carrera);
+            }
+        }
+        return;
+    }
+
+    /** Pausa: P continua (redibujando todo), R vuelve al menu. */
+    method void procesarPausa() {
+        if (~nueva) {
+            return;
+        }
+        if (tecla = 80) {
+            let modo = 1;
+            do pantalla.partida(carrera, meta);
+        }
+        if (tecla = 82) {
+            do menu();
+        }
+        return;
+    }
+
+    /** Fin de partida: R vuelve al menu. */
+    method void procesarFin() {
+        if (nueva) {
+            if (tecla = 82) {
+                do menu();
+            }
+        }
+        return;
+    }
+
+    /** Crea una partida nueva con la distancia dada. La semilla es el tiempo transcurrido. */
+    method void iniciar(int distancia) {
+        if (~(carrera = null)) {
+            do carrera.dispose();
+        }
+        let carrera = Carrera.new(distancia, cuadros);
+        let meta = distancia;
+        let cuadrosPaso = 0;
+        let modo = 1;
+        do pantalla.partida(carrera, meta);
+        return;
+    }
+
+    /** Pausa el juego y muestra el mensaje. */
+    method void pausar() {
+        let modo = 2;
+        do pantalla.pausa();
+        return;
+    }
+
+    /** Libera la partida actual y vuelve a la pantalla inicial. */
+    method void menu() {
+        if (~(carrera = null)) {
+            do carrera.dispose();
+        }
+        let carrera = null;
+        let modo = 0;
+        do pantalla.menu();
+        return;
+    }
+}
