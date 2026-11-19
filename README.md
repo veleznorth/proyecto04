@@ -6,9 +6,9 @@
 
 | Nombre | Usuario GitHub | Aportes principales |
 |---|---|---|
-| (completar) | (completar) | (completar) |
-| (completar) | (completar) | (completar) |
-| (completar) | (completar) | (completar) |
+| mathias | veleznorth | Estructura del proyecto, README, clases `Juego` y `Main` |
+| Cmachados | Cmachados | Clase `Sprites`, rutina VM `Grafico.dibujarCelda` y clase `Pantalla` |
+| thesmagicc | thesmagicc | Clases `Tipo` y `Azar`, lógica de `Carrera` y `Obstaculo` |
 
 # Compilación y ejecución
 
